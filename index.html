@@ -1,283 +1,93 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snake_Kaffee</title>
+  <title>Quer sair comigo?</title>
   <style>
     body {
-        font-family:Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        justify-content: center; 
-        align-items: center;
-        min-height: 100vh;
-        margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #ffe6f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
     }
 
-    #grade {
-        border: 5px solid black;
-        display: grid;
-        grid-template-columns: repeat(16, 2vw);
-        grid-template-rows: repeat(16, 2vw);
-        background-color: #ccc;
+    #popup {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      padding: 30px;
+      transition: all 0.3s ease;
+      position: relative;
     }
 
-    .celula {
-        width: 2vw;
-        height: 2vw;
-        background-color: white;
-        border: 1px solid #ccc;
-        box-sizing: border-box;
+    h2 {
+      color: #e60073;
     }
 
-    /* Esconde controles no PC */ 
-    #controles-celular {
-        display: none;
+    button {
+      border: none;
+      background: #e60073;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+      transition: 0.3s;
     }
 
-    /* Estilos para celulares */
-    @media screen and (max-width: 768px) {
-        body {
-            justify-content: flex-start; /* alinha conteúdo no topo */
-            padding-top: 20px;           /* distância do topo */
-        }
-
-        h1, p {
-            font-size: larger; /* aumenta textos para celulares */
-            text-align: center;
-            margin: 5px 10px;
-        }
-        
-        #grade {
-            grid-template-columns: repeat(16, 4vw);
-            grid-template-rows: repeat(16, 4vw);
-        }
-
-        .celula {
-            width: 4vw;
-            height: 4vw;
-        }
-        
-        /* painel de controles para celular */
-        #controles-celular {
-            display: block !important;
-            position: relative;
-            width: 120px;      /* largura do painel de controle */
-            height: 120px;     /* altura do painel de controle */
-            margin: 20px auto 0 auto; /* espaço em cima para ficar abaixo do tabuleiro */
-        }
-        
-        /* estilo dos botões */
-        #controles-celular button {
-            width: 40px;       /* menor tamanho */
-            height: 40px;
-            font-size: 1.2rem; /* diminuiu a fonte */
-            border-radius: 10px;
-            position: absolute;
-        }
-
-        /* Posições individuais (D-pad) */
-        .btn-cima {
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .btn-baixo {
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .btn-esquerda {
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%);
-        }
-        .btn-direita {
-            top: 50%;
-            right: 0;
-            transform: translateY(-50%);
-        }
+    button:hover {
+      transform: scale(1.1);
     }
-    
+
+    #mensagem {
+      display: none;
+      text-align: center;
+      font-size: 20px;
+      color: #e60073;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
+  <div id="popup">
+    <h2>Quer sair comigo?</h2>
+    <button id="sim">Sim 💖</button>
+    <button id="nao">Não 😅</button>
+  </div>
 
-<h1 style="margin-top: 50px;">Jogo da cobrinha</h1>
-<p style="margin-top: 10px; margin-bottom: 10px;">
-    Este é um primeiro protótipo de jogo da cobrinha feito em Javascript, CSS e HTML.
-</p>
+  <div id="mensagem">
+    <p>🥰 Volte para a conversa e vamos marcar! 💌</p>
+  </div>
 
-<div id="grade"></div>
+  <script>
+    const naoBtn = document.getElementById("nao");
+    const simBtn = document.getElementById("sim");
+    const popup = document.getElementById("popup");
+    const mensagem = document.getElementById("mensagem");
 
-<div id="controles-celular">
-    <button class="btn-cima" data-dir="cima">↑</button>
-    <button class="btn-esquerda" data-dir="esquerda">←</button>
-    <button class="btn-baixo" data-dir="baixo">↓</button>
-    <button class="btn-direita" data-dir="direita">→</button>
-</div>
-
-<script>
-    // ------------------ CONSTANTES ------------------
-    const dir = { cima: 0, baixo: 1, esquerda: 2, direita: 3 };
-    const grade = document.getElementById("grade");
-    const tamanho = 16;
-    const celulas = [];
-    const valores = [];
-
-    // ------------------ VARIÁVEIS MUTÁVEIS ------------------
-    let direcao = dir.direita;
-    let proximaDirecao = direcao;
-    let cabecaX = 8;
-    let cabecaY = 8;
-    let cobra = [
-        cabecaY * tamanho + (cabecaX - 1),
-        cabecaY * tamanho + cabecaX
-    ];
-    let tamanhoCobra = 2;
-
-    // ------------------ FUNÇÕES ------------------
-    function atualizarCores() {
-        for (let i = 0; i < valores.length; i++) {
-            if (valores[i] === 0) celulas[i].style.backgroundColor = "white";
-            else if (valores[i] === 1) celulas[i].style.backgroundColor = "#0074D9";
-            else if (valores[i] === 2) celulas[i].style.backgroundColor = "green";
-            else if (valores[i] === 3) celulas[i].style.backgroundColor = "red";
-        }
-    }
-
-    function desenharCobra() {
-        for (let i = 0; i < valores.length; i++) {
-            if (valores[i] !== 3) valores[i] = 0;
-        }
-
-        cobra.forEach((indice, i) => {
-            valores[indice] = (i === cobra.length - 1) ? 1 : 2;
-        });
-
-        atualizarCores();
-    }
-
-    function spawnComida() {
-        const celulasVazias = [];
-        for (let i = 0; i < valores.length; i++) {
-            if (valores[i] === 0) celulasVazias.push(i);
-        }
-        const indiceAleatorio = celulasVazias[Math.floor(Math.random() * celulasVazias.length)];
-        valores[indiceAleatorio] = 3;
-        atualizarCores();
-    }
-
-    function resetarJogo() {
-        cabecaX = 8;
-        cabecaY = 8;
-        direcao = dir.direita;
-        proximaDirecao = direcao;
-        tamanhoCobra = 2;
-        cobra = [
-            cabecaY * tamanho + (cabecaX - 1),
-            cabecaY * tamanho + cabecaX
-        ];
-        valores.fill(0);
-        spawnComida();
-        desenharCobra();
-    }
-
-    function moverCobra() {
-        direcao = proximaDirecao;
-
-        let novaX = cabecaX;
-        let novaY = cabecaY;
-
-        if (direcao === dir.cima) novaY--;
-        else if (direcao === dir.baixo) novaY++;
-        else if (direcao === dir.esquerda) novaX--;
-        else if (direcao === dir.direita) novaX++;
-
-        if (novaX < 0 || novaX >= tamanho || novaY < 0 || novaY >= tamanho) {
-            alert("Game Over! A cobra saiu do campo.");
-            resetarJogo();
-            return;
-        }
-
-        const novoIndice = novaY * tamanho + novaX;
-
-        if (cobra.includes(novoIndice)) {
-            alert("Game Over! A cobra colidiu consigo mesma.");
-            resetarJogo();
-            return;
-        }
-
-        if (valores[novoIndice] === 3) {
-            tamanhoCobra++;
-            spawnComida();
-        } else {
-            const indiceCauda = cobra.shift();
-            valores[indiceCauda] = 0;
-        }
-
-        cabecaX = novaX;
-        cabecaY = novaY;
-        cobra.push(novoIndice);
-
-        cobra.forEach((indice, i) => {
-            valores[indice] = i === cobra.length - 1 ? 1 : 2;
-        });
-
-        atualizarCores();
-    }
-
-    // ------------------ EXECUÇÃO ------------------
-    for (let i = 0; i < tamanho * tamanho; i++) {
-        const celula = document.createElement("div");
-        celula.className = "celula";
-        grade.appendChild(celula);
-        celulas.push(celula);
-        valores.push(0);
-    }
-
-    desenharCobra();
-    spawnComida();
-
-    document.addEventListener("keydown", (event) => {
-        switch(event.key.toLowerCase()) {
-            case "w":
-                if(direcao !== dir.baixo) proximaDirecao = dir.cima;
-                break;
-            case "s":
-                if(direcao !== dir.cima) proximaDirecao = dir.baixo;
-                break;
-            case "a":
-                if(direcao !== dir.direita) proximaDirecao = dir.esquerda;
-                break;
-            case "d":
-                if(direcao !== dir.esquerda) proximaDirecao = dir.direita;
-                break;
-        }
+    naoBtn.addEventListener("mouseover", () => {
+      const x = Math.random() * (window.innerWidth - 150);
+      const y = Math.random() * (window.innerHeight - 100);
+      popup.style.position = "absolute";
+      popup.style.left = `${x}px`;
+      popup.style.top = `${y}px`;
     });
 
-    const botoes = document.querySelectorAll("#controles-celular button");
-    botoes.forEach(botao => {
-        botao.addEventListener("click", () => {
-            const dirBotao = botao.getAttribute("data-dir");
-            switch(dirBotao) {
-                case "cima":
-                    if(direcao !== dir.baixo) proximaDirecao = dir.cima;
-                    break;
-                case "baixo":
-                    if(direcao !== dir.cima) proximaDirecao = dir.baixo;
-                    break;
-                case "esquerda":
-                    if(direcao !== dir.direita) proximaDirecao = dir.esquerda;
-                    break;
-                case "direita":
-                    if(direcao !== dir.esquerda) proximaDirecao = dir.direita;
-                    break;
-            }
-        });
+    simBtn.addEventListener("click", () => {
+      popup.style.display = "none";
+      mensagem.style.display = "block";
     });
-
-    setInterval(moverCobra, 300);
-</script>
+  </script>
 </body>
 </html>
